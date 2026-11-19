@@ -1,0 +1,122 @@
+spring:
+  application:
+    name: rlead
+
+  # Database Configuration
+  datasource:
+    url: ${DATABASE_URL:jdbc:sqlite:rlead.db}
+    driver-class-name: ${DATABASE_DRIVER:org.sqlite.JDBC}
+    username: ${DATABASE_USER:}
+    password: ${DATABASE_PASSWORD:}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: ${SQL_ECHO:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+        format_sql: true
+
+  # Servlet Configuration
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # Jackson Configuration
+  # Note: Jackson 3.0 (tools.jackson) in Spring Boot 4.x has different configuration
+  # jackson:
+  #   default-property-inclusion: non_null
+  #   serialization:
+  #     write-dates-as-timestamps: false
+
+  # Spring AI Configuration
+  ai:
+    # 일시 오류 재시도는 짧게 (작업 단위 재시도는 앱이 담당)
+    retry:
+      max-attempts: 2
+      backoff:
+        initial-interval: 2s
+        multiplier: 2
+        max-interval: 5s
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: gpt-4o
+          temperature: 0.1
+    anthropic:
+      api-key: ${CLAUDE_API_KEY:}
+      chat:
+        options:
+          model: claude-3-5-sonnet-20241022
+          temperature: 0.1
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: always
+    include-binding-errors: never
+
+# Application Configuration
+app:
+  environment: ${ENVIRONMENT:development}
+  debug: ${DEBUG:true}
+  secret-key: ${SECRET_KEY:change-this-in-production-min-32-chars-required}
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+
+  # CORS
+  cors:
+    allowed-origins:
+      - http://localhost:5173
+      - http://localhost:3000
+
+  # S3 Storage
+  s3:
+    endpoint: ${S3_ENDPOINT:http://localhost:9000}
+    # 브라우저가 접근하는 주소 (Docker 에서는 http://localhost:9000). 비워 두면 endpoint 와 같다.
+    public-endpoint: ${S3_PUBLIC_ENDPOINT:}
+    access-key: ${S3_ACCESS_KEY:minioadmin}
+    secret-key: ${S3_SECRET_KEY:minioadmin}
+    bucket-name: ${S3_BUCKET_NAME:business-cards}
+    region: ${S3_REGION:us-east-1}
+
+  image:
+    retention-days: ${IMAGE_RETENTION_DAYS:90}
+
+  # AI Provider
+  # FIXME: Choose one AI provider (openai, gemini, claude, mock)
+  ai:
+    provider: ${AI_PROVIDER:gemini}
+    # Gemini는 Spring AI OpenAI 모델 + Gemini OpenAI 호환 엔드포인트로 호출한다 (GeminiExtractor)
+    gemini:
+      model: ${GEMINI_MODEL:gemini-flash-latest}
+
+  # CRM
+  # FIXME: Configure CRM integration
+  crm:
+    type: ${CRM_TYPE:none}
+    api-key: ${CRM_API_KEY:}
+    api-url: ${CRM_API_URL:}
+
+  # Email (Phase 2)
+  email:
+    smtp:
+      host: ${SMTP_HOST:smtp.gmail.com}
+      port: ${SMTP_PORT:587}
+      user: ${SMTP_USER:}
+      password: ${SMTP_PASSWORD:}
+    from-email: ${FROM_EMAIL:noreply@example.com}
+
+  # Authentication
+  # FIXME: Configure authentication provider
+  auth:
+    provider: ${AUTH_PROVIDER:google}
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
+      client-secret: ${GOOGLE_CLIENT_SECRET:}
+    microsoft:
+      client-id: ${MICROSOFT_CLIENT_ID:}
+      tenant-id: ${MICROSOFT_TENANT_ID:}

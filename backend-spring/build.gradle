@@ -1,0 +1,91 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.rainbow'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url 'https://repo.spring.io/snapshot' }
+}
+
+dependencies {
+    // Spring Boot Web
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Spring Boot Data JPA
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // Spring Boot Validation
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // Spring AI
+    implementation platform('org.springframework.ai:spring-ai-bom:1.0.0-M4')
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-anthropic-spring-boot-starter'
+
+    // PostgreSQL Driver
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // SQLite Driver (for development)
+    implementation 'org.xerial:sqlite-jdbc:3.46.0.0'
+
+    // Hibernate SQLite Dialect
+    implementation 'org.hibernate.orm:hibernate-community-dialects'
+
+    // AWS SDK for S3
+    implementation 'software.amazon.awssdk:s3:2.28.11'
+
+    // Jackson for JSON
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // Google libphonenumber for phone validation
+    implementation 'com.googlecode.libphonenumber:libphonenumber:8.13.47'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Swagger/OpenAPI (SpringDoc)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+
+    // Environment Variables (.env file support)
+    implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+
+    // Spring Boot DevTools
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Spring Boot Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // H2 Database (for testing)
+    testRuntimeOnly 'com.h2database:h2'
+
+    // Gradle 9 requires the JUnit Platform launcher to be declared explicitly
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// bootJar 하나만 만든다 (-plain.jar 제외: Docker 의 COPY *.jar 가 한 개만 잡도록)
+tasks.named('jar') {
+    enabled = false
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

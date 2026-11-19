@@ -1,0 +1,2 @@
+org.springframework.context.ApplicationContextInitializer=\
+  com.rainbow.rlead.config.DotenvConfig
