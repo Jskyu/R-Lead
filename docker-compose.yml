@@ -1,0 +1,157 @@
+# R-Lead 전체 스택
+#
+#   기본 (FastAPI 백엔드):   docker compose up -d --build
+#   Spring Boot 백엔드:      BACKEND_URL=http://backend-spring:8080 docker compose --profile spring up -d --build \
+#                              postgres minio backend-spring frontend
+#                            (Spring 은 SQLite 볼륨을 쓰므로 postgres 는 필요 없습니다. FastAPI 는 postgres 가 필요합니다.)
+#   개발 중 인프라만:        docker compose up -d postgres minio
+#
+# 접속: 프론트엔드 http://localhost:3000 · FastAPI 문서 http://localhost:8000/api/docs
+#       Spring 문서 http://localhost:8080/swagger-ui.html · MinIO 콘솔 http://localhost:9001
+# 비밀값(API 키 등)은 이 파일이 아니라 .env 에 둡니다 (.env.example 참고, .env 는 커밋하지 않습니다).
+
+services:
+  # PostgreSQL (FastAPI 백엔드용)
+  postgres:
+    image: postgres:16-alpine
+    container_name: rlead-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rlead
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rlead-network
+
+  # MinIO (S3 호환 저장소)
+  # Note: MinIO 가 공식 Docker 이미지를 중단해서 커뮤니티 이미지를 사용합니다.
+  minio:
+    image: coollabsio/minio:latest
+    container_name: rlead-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"  # API
+      - "9001:9001"  # Console
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5s bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - rlead-network
+
+  # 백엔드 A: Python FastAPI (기본)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rlead-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/rlead
+      S3_ENDPOINT: http://minio:9000
+      # 브라우저가 명함 사진을 열 때 쓰는 주소 (컨테이너 내부 주소 minio 는 브라우저에서 열 수 없음)
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET_NAME: business-cards
+      SECRET_KEY: ${SECRET_KEY:-change-this-secret-key-in-production}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      CRM_TYPE: ${CRM_TYPE:-none}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - rlead-network
+
+  # 백엔드 B: Spring Boot (선택 - `--profile spring`)
+  backend-spring:
+    profiles: ["spring"]
+    build:
+      context: ./backend-spring
+      dockerfile: Dockerfile
+    container_name: rlead-backend-spring
+    restart: unless-stopped
+    environment:
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET_NAME: business-cards
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - spring-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/cards/health > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    networks:
+      - rlead-network
+
+  # 프론트엔드 (nginx). /api 는 BACKEND_URL 로 프록시한다.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rlead-frontend
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
+    ports:
+      - "3000:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - rlead-network
+
+volumes:
+  postgres-data:
+  minio-data:
+  spring-data:
+
+networks:
+  rlead-network:
+    driver: bridge
