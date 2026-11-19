@@ -1,0 +1,106 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+dist-ssr/
+*.local
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# S3/MinIO
+minio-data/
+
+# Temporary files
+temp/
+tmp/
+uploads/
+*.tmp
+
+# Testing
+coverage/
+.coverage
+htmlcov/
+
+# Gradle (Spring Boot 백엔드). Wrapper jar 는 커밋해야 clone 후 바로 빌드된다.
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Windows 가 만드는 예약 이름 파일, 로컬 테스트 산출물 (실제 명함 사진·개인정보가 들어 있을 수 있음)
+nul
+/temp_url.txt
+/test_*.jpg
+/test_*.csv
+
+# Java / Spring Boot
+target/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+*.war
+*.ear
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+*.iml
+.idea/
+.settings/
+.classpath
+.project
+spring-boot-*.log
